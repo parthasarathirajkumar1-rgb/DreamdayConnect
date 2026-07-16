@@ -66,6 +66,7 @@ function NavBar({ page, setPage }) {
     { key: "search", label: "Find Vendors" },
     { key: "planner", label: "AI Planner" },
     { key: "dashboard", label: "Vendor Dashboard" },
+    { key: "vendorSignup", label: "Become a Vendor" },
   ];
   return (
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-stone-200">
@@ -506,6 +507,117 @@ function DashboardPage() {
   );
 }
 
+function VendorSignupPage({ setPage }) {
+  const [form, setForm] = useState({ businessName: "", category: CATEGORIES[0], city: CITIES[0], priceFrom: "", about: "", email: "", password: "" });
+  const [status, setStatus] = useState("idle"); // idle | saving | done | error
+  const [error, setError] = useState("");
+
+  function update(field, value) {
+    setForm(f => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setStatus("saving");
+    setError("");
+    try {
+      // 1. Create the login account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: form.email,
+        password: form.password,
+      });
+      if (authError) throw authError;
+      const userId = authData.user?.id;
+      if (!userId) throw new Error("Signup didn't return a user — check your email to confirm, then log in.");
+
+      // 2. Create the vendor listing
+      const { data: vendorRow, error: vendorError } = await supabase
+        .from("vendors")
+        .insert({
+          name: form.businessName,
+          category: form.category,
+          city: form.city,
+          price_from: Number(form.priceFrom) || 0,
+          about: form.about,
+          tags: [],
+        })
+        .select()
+        .single();
+      if (vendorError) throw vendorError;
+
+      // 3. Link the profile to the vendor listing
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({ id: userId, role: "vendor", vendor_id: vendorRow.id, full_name: form.businessName });
+      if (profileError) throw profileError;
+
+      setStatus("done");
+    } catch (err) {
+      setStatus("error");
+      setError(err.message || "Something went wrong — please try again.");
+    }
+  }
+
+  if (status === "done") {
+    return (
+      <div className="max-w-lg mx-auto px-5 py-20 text-center">
+        <CheckCircle2 className="mx-auto text-teal-700 mb-4" size={44}/>
+        <h1 className="font-serif text-2xl font-bold mb-2">You're listed on DreamDay Connect!</h1>
+        <p className="text-stone-500 mb-6">Check your email ({form.email}) to confirm your account, then you can log in and manage your listing.</p>
+        <button onClick={() => setPage("search")} className="bg-stone-900 text-white font-bold px-6 py-3 rounded-full">See your listing in Find Vendors</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-lg mx-auto px-5 py-12">
+      <h1 className="font-serif text-3xl font-bold mb-1">Become a Vendor</h1>
+      <p className="text-stone-500 mb-8">List your business on DreamDay Connect — it's free to get started.</p>
+      <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-stone-200 rounded-2xl p-6">
+        <div>
+          <label className="text-sm font-semibold block mb-1">Business name</label>
+          <input required value={form.businessName} onChange={e => update("businessName", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="e.g. Lens & Light Studio" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-sm font-semibold block mb-1">Category</label>
+            <select value={form.category} onChange={e => update("category", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2">
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-semibold block mb-1">City</label>
+            <select value={form.city} onChange={e => update("city", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2">
+              {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-sm font-semibold block mb-1">Starting price (₹)</label>
+          <input required type="number" min="0" value={form.priceFrom} onChange={e => update("priceFrom", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="e.g. 15000" />
+        </div>
+        <div>
+          <label className="text-sm font-semibold block mb-1">About your business</label>
+          <textarea value={form.about} onChange={e => update("about", e.target.value)} rows={3} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="What makes your service special?" />
+        </div>
+        <hr className="border-stone-200" />
+        <div>
+          <label className="text-sm font-semibold block mb-1">Email (for login)</label>
+          <input required type="email" value={form.email} onChange={e => update("email", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="you@business.com" />
+        </div>
+        <div>
+          <label className="text-sm font-semibold block mb-1">Password</label>
+          <input required type="password" minLength={6} value={form.password} onChange={e => update("password", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="At least 6 characters" />
+        </div>
+        {status === "error" && <p className="text-rose-600 text-sm">{error}</p>}
+        <button type="submit" disabled={status === "saving"} className="w-full bg-rose-600 disabled:opacity-50 text-white font-bold py-3 rounded-full">
+          {status === "saving" ? "Creating your listing…" : "List my business"}
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("home");
   const [filters, setFilters] = useState({ category: "", city: "", budgetMax: 150000, minRating: 0 });
@@ -535,6 +647,7 @@ export default function App() {
           {page === "booking" && <BookingPage booking={booking} setPage={setPage} />}
           {page === "planner" && <PlannerPage />}
           {page === "dashboard" && <DashboardPage />}
+          {page === "vendorSignup" && <VendorSignupPage setPage={setPage} />}
         </>
       )}
       <footer className="text-center text-xs text-stone-400 py-8 border-t border-stone-200 mt-10">
