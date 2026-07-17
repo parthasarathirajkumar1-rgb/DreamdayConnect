@@ -53,15 +53,38 @@ async function fetchVendors() {
 }
 
 const CATEGORIES = ["Photographers", "Caterers", "Decorators", "Marriage Halls", "DJs", "Makeup Artists", "Wedding Planners"];
-const CITIES = [
-  "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
-  "Dindigul", "Erode", "Kallakurichi", "Kancheepuram", "Kanyakumari", "Karur",
-  "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal",
-  "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem",
-  "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli",
-  "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai",
-  "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar",
-];
+const STATE_CITIES = {
+  "Tamil Nadu": [
+    "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
+    "Dindigul", "Erode", "Kallakurichi", "Kancheepuram", "Kanyakumari", "Karur",
+    "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal",
+    "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem",
+    "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli",
+    "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai",
+    "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar",
+  ],
+  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Tirupati", "Kurnool", "Kadapa", "Rajahmundry", "Anantapur", "Kakinada"],
+  "Karnataka": ["Bengaluru", "Mysuru", "Mangaluru", "Hubballi", "Belagavi", "Davanagere", "Ballari", "Shivamogga", "Tumakuru", "Udupi"],
+  "Kerala": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam", "Alappuzha", "Kannur", "Kottayam", "Palakkad", "Malappuram"],
+  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam", "Mahbubnagar", "Ramagundam"],
+  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Thane", "Aurangabad", "Solapur", "Kolhapur", "Amravati", "Navi Mumbai"],
+  "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi"],
+  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Bhavnagar", "Jamnagar", "Gandhinagar"],
+  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer", "Bikaner"],
+  "Uttar Pradesh": ["Lucknow", "Kanpur", "Noida", "Ghaziabad", "Agra", "Varanasi", "Meerut", "Prayagraj"],
+  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
+  "Punjab": ["Chandigarh", "Ludhiana", "Amritsar", "Jalandhar", "Patiala"],
+  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Karnal", "Ambala"],
+  "Madhya Pradesh": ["Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain"],
+  "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur"],
+  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri"],
+  "Puducherry": ["Puducherry", "Karaikal", "Yanam", "Mahe"],
+  "Goa": ["Panaji", "Margao", "Vasco da Gama"],
+  "Assam": ["Guwahati", "Dibrugarh", "Silchar"],
+  "Jammu and Kashmir": ["Srinagar", "Jammu"],
+  "Chandigarh": ["Chandigarh"],
+};
+const STATES = Object.keys(STATE_CITIES);
 
 function currency(n) {
   return "₹" + n.toLocaleString("en-IN");
@@ -165,6 +188,7 @@ function SearchPage({ vendors, filters, setFilters, setPage, setSelectedVendorId
   const results = useMemo(() => {
     return vendors.filter(v =>
       (!filters.category || v.category === filters.category) &&
+      (!filters.state || v.state === filters.state) &&
       (!filters.city || v.city === filters.city) &&
       v.priceFrom <= filters.budgetMax &&
       v.rating >= filters.minRating
@@ -180,10 +204,15 @@ function SearchPage({ vendors, filters, setFilters, setPage, setSelectedVendorId
           <option value="">All categories</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
-        <label className="text-xs font-bold uppercase text-stone-500">City</label>
-        <select value={filters.city} onChange={e => setFilters(f => ({ ...f, city: e.target.value }))} className="w-full border border-stone-300 rounded-lg p-2 mt-1 mb-4 text-sm">
-          <option value="">All cities</option>
-          {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+        <label className="text-xs font-bold uppercase text-stone-500">State</label>
+        <select value={filters.state} onChange={e => setFilters(f => ({ ...f, state: e.target.value, city: "" }))} className="w-full border border-stone-300 rounded-lg p-2 mt-1 mb-4 text-sm">
+          <option value="">All states</option>
+          {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <label className="text-xs font-bold uppercase text-stone-500">City / District</label>
+        <select value={filters.city} onChange={e => setFilters(f => ({ ...f, city: e.target.value }))} disabled={!filters.state} className="w-full border border-stone-300 rounded-lg p-2 mt-1 mb-4 text-sm disabled:bg-stone-100 disabled:text-stone-400">
+          <option value="">{filters.state ? "All cities" : "Select a state first"}</option>
+          {(STATE_CITIES[filters.state] || []).map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <label className="text-xs font-bold uppercase text-stone-500">Max budget: {currency(filters.budgetMax)}</label>
         <input type="range" min="5000" max="150000" step="1000" value={filters.budgetMax}
@@ -377,6 +406,7 @@ function BookingPage({ booking, setPage }) {
 
 function PlannerPage() {
   const [budget, setBudget] = useState(100000);
+  const [state, setState] = useState("Tamil Nadu");
   const [city, setCity] = useState("Chennai");
   const [eventType, setEventType] = useState("Wedding");
   const [guests, setGuests] = useState(150);
@@ -389,24 +419,17 @@ function PlannerPage() {
     setError("");
     setPlan(null);
     try {
-      const prompt = `You are a wedding/event budget planner for the Indian market. Given: budget ₹${budget}, city ${city}, event type ${eventType}, guest count ${guests}.
-Return ONLY a raw JSON object, no markdown fences, no preamble, in this exact shape:
-{"total": number, "items": [{"category": string, "amount": number, "note": string}], "tip": string}
-The sum of all "items[].amount" must be less than or equal to the budget. Include 4-6 realistic categories relevant to the event type (e.g. photography, catering, decoration, makeup, venue, entertainment). Amounts should reflect realistic Indian vendor pricing for a mid-size city. Keep "note" under 8 words and "tip" under 20 words.`;
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/plan-budget`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          messages: [{ role: "user", content: prompt }],
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "apikey": SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ budget, city: `${city}, ${state}`, eventType, guests }),
       });
-      const data = await response.json();
-      const text = (data.content || []).map(b => b.text || "").join("\n");
-      const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
+      const parsed = await response.json();
+      if (parsed.error) throw new Error(parsed.error);
       setPlan(parsed);
     } catch (e) {
       setError("Couldn't generate a plan right now. Please try again.");
@@ -429,9 +452,15 @@ The sum of all "items[].amount" must be less than or equal to the budget. Includ
           <input type="number" value={budget} onChange={e => setBudget(Number(e.target.value))} className="w-full border border-stone-300 rounded-lg p-2.5 mt-1"/>
         </div>
         <div>
-          <label className="text-xs font-bold uppercase text-stone-500">City</label>
+          <label className="text-xs font-bold uppercase text-stone-500">State</label>
+          <select value={state} onChange={e => { setState(e.target.value); setCity(STATE_CITIES[e.target.value][0]); }} className="w-full border border-stone-300 rounded-lg p-2.5 mt-1">
+            {STATES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-bold uppercase text-stone-500">City / District</label>
           <select value={city} onChange={e => setCity(e.target.value)} className="w-full border border-stone-300 rounded-lg p-2.5 mt-1">
-            {CITIES.map(c => <option key={c}>{c}</option>)}
+            {(STATE_CITIES[state] || []).map(c => <option key={c}>{c}</option>)}
           </select>
         </div>
         <div>
@@ -516,7 +545,7 @@ function DashboardPage() {
 }
 
 function VendorSignupPage({ setPage }) {
-  const [form, setForm] = useState({ businessName: "", category: CATEGORIES[0], city: CITIES[0], priceFrom: "", about: "", email: "", password: "" });
+  const [form, setForm] = useState({ businessName: "", category: CATEGORIES[0], state: "Tamil Nadu", city: STATE_CITIES["Tamil Nadu"][0], priceFrom: "", about: "", email: "", password: "" });
   const [status, setStatus] = useState("idle"); // idle | saving | done | error
   const [error, setError] = useState("");
 
@@ -544,7 +573,7 @@ function VendorSignupPage({ setPage }) {
         .insert({
           name: form.businessName,
           category: form.category,
-          city: form.city,
+          city: `${form.city}, ${form.state}`,
           price_from: Number(form.priceFrom) || 0,
           about: form.about,
           tags: [],
@@ -586,7 +615,7 @@ function VendorSignupPage({ setPage }) {
           <label className="text-sm font-semibold block mb-1">Business name</label>
           <input required value={form.businessName} onChange={e => update("businessName", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2" placeholder="e.g. Lens & Light Studio" />
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <div>
             <label className="text-sm font-semibold block mb-1">Category</label>
             <select value={form.category} onChange={e => update("category", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2">
@@ -594,9 +623,15 @@ function VendorSignupPage({ setPage }) {
             </select>
           </div>
           <div>
-            <label className="text-sm font-semibold block mb-1">City</label>
+            <label className="text-sm font-semibold block mb-1">State</label>
+            <select value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value, city: STATE_CITIES[e.target.value][0] }))} className="w-full border border-stone-300 rounded-lg px-3 py-2">
+              {STATES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-semibold block mb-1">City / District</label>
             <select value={form.city} onChange={e => update("city", e.target.value)} className="w-full border border-stone-300 rounded-lg px-3 py-2">
-              {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {(STATE_CITIES[form.state] || []).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
         </div>
